@@ -1,0 +1,23 @@
+[project]
+name = "sdstrack"
+version = "0.1.0"
+description = "SDSTrack reproduction for Pattern Recognition course design (topic #65)"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.optional-dependencies]
+# Upstream SDSTrack requires Python 3.8 and PyTorch 1.11.0 (CUDA 11.3).
+# These dependencies are for local tooling only; experiments run in Colab.
+dev = [
+    "ruff",
+    "pytest",
+]
+
+# Note: The actual experiment environment uses:
+# - PyTorch 1.11.0, torchvision 0.12.0, torchaudio 0.11.0
+# - cudatoolkit 11.3
+# - PyYAML, easydict, cython, opencv-python, pandas, pycocotools
+# - jpeg4py, scipy, timm==0.5.4, tb-nightly, lmdb, visdom, wandb
+# - vot-toolkit==0.5.3, vot-trax==3.0.3
+# See upstream/install_sdstrack.sh for the full install script.
