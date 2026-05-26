@@ -16,13 +16,14 @@
 
 ## Current Status
 
-- **Milestone 1** (环境搭建与数据准备, due 2026-05-17): **closed** — baseline environment ready.
-- **Milestone 2** (方案设计与中期检查, due 2026-05-24): open — past due.
-- **Milestone 3** (实验, due 2026-06-14): open.
-- **Milestone 4** (评估与改进, due 2026-06-28): open.
-- **Milestone 5** (撰写课程设计报告, due 2026-07-05): open.
-- **Milestone 6** (考核答辩, due 2026-07-12): open.
-- No code in repo yet. Open issues: #3 (ViPT复现) and #5 (文献调研和综述报告).
+- **Milestone 1** (需求分析与开题, due 2026-05-17): **closed**.
+- **Milestone 2** (环境搭建与数据准备, due 2026-05-17): **closed**.
+- **Milestone 3** (综述草稿与中期检查, due 2026-05-24): open — past due.
+- **Milestone 4** (实验, due 2026-06-14): open.
+- **Milestone 5** (评估与改进, due 2026-06-28): open.
+- **Milestone 6** (撰写课程设计报告, due 2026-07-05): open.
+- **Milestone 7** (考核答辩, due 2026-07-12): open.
+- No code in repo yet. Open issues: #3 (ViPT复现), #5 (文献调研), #6 (请教导师), #7 (综述草稿).
 
 ## Conventions
 

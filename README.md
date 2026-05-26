@@ -6,12 +6,16 @@ EvTrack is a research project focused on object tracking using event cameras. Ev
 
 This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Tracking)](https://github.com/jiawen-zhu/ViPT) algorithm on event-camera tracking benchmarks.
 
+## Documentation
+
+- [`docs/project-proposal.md`](docs/project-proposal.md) — 开题报告 (project proposal, in Chinese)
+- [`docs/dataset-setup.md`](docs/dataset-setup.md) — Dataset download and preparation guide
+- [`docs/course-project-guide.md`](docs/course-project-guide.md) — Course design requirements and grading rubric
+
 ## Datasets
 
 - [VisEvent](https://github.com/wangxiao5791509/VisEvent_SOT_Benchmark)
 - [COESOT](https://github.com/Event-AHU/COESOT)
-
-See [`docs/dataset-setup.md`](docs/dataset-setup.md) for download and preparation instructions.
 
 ## Project Structure
 
