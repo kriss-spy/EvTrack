@@ -1,78 +1,51 @@
-具体工作见 [EvTrack](./EvTrack/README.md)
+# EvTrack: Event Camera-based Object Tracking
 
-## 简介
+## Overview
 
-整个工作流程是这样的:
+EvTrack is a research project focused on object tracking using event cameras. Event cameras offer microsecond temporal resolution and high dynamic range, making them ideal for high-speed and extreme lighting scenarios where traditional frame-based cameras struggle.
 
-1. 小组组建。大家根据自愿原则，**以五人为一个小组，组建设计小组，并选举一名组长**，整个过程由学生们自行商量，老师不参与。
-2. 读题和解释题目。**QQ群发布2026年课程设计的指导书**，
-   目前有题目90个，除最后一题为灵活选题以外，1-89题均为命题设计，均写明了设计要求，
-   数据集要求等等信息以及对应的指导老师的联系方式。
-3. 选题
-   我在确定时间地点后，由**组长上台抽签获得选题顺序，然后按顺序选题**。
+This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Tracking)](https://github.com/jiawen-zhu/ViPT) algorithm on event-camera tracking benchmarks.
 
-有问题通过QQ问
+## Datasets
 
-## 选题
+- [VisEvent](https://github.com/wangxiao5791509/VisEvent_SOT_Benchmark)
+- [COESOT](https://github.com/Event-AHU/COESOT)
 
-再说一遍，题目选择和指导老师不是自己找的，是看运气的。
-组长抽签获得选题顺序，比如某组组长抽签获得了1号，那就能第一个上台在全部90道题目中选一题。
-选题后，这道被选择的题目就退出题库，不能被其他组选择了。
+See [`docs/dataset-setup.md`](docs/dataset-setup.md) for download and preparation instructions.
 
-只有最后一题，也就是**第90题能被重复挑选，选择第90题的小组，需要挑选指导老师**。
-每个老师命题是8-9道题。
-每位老师承担不超过9个小组的指导工作，如果这位老师在前面的选题过程中，已经有9个小组选择他，
-那老师就退出老师池，不再可以被后面的小组选择第90题时作为指导老师被选择。
+## Project Structure
 
-这是第90题的题目
+```
+.
+├── code/           # Tracker implementation (ViPT)
+├── evaluation/     # Shared evaluation metrics and scripts
+├── data/           # Dataset paths and setup guides (not raw data)
+├── results/        # Evaluation outputs, plots, videos
+├── docs/           # Documentation and guides
+└── requirements.txt
+```
 
-> 任务描述:从kaggle或baidu aistudio中自主选择公开竞赛项目作为本课程设计题目,以竞赛排名作为验收的测试依据。
-> (本题选题小组数量不限)
-> <https://www.kaggle.com/competitions>
-> <https://aistudio.baidu.com/aistudio/competition>
-> 指导老师:可选择胡静、杨卫东、肖阳、邹腊梅、陆昊、胡若澜、邹旭、昌毅、谭毅华、程骋、黎云老师中的任意一位作为指导老师。
-> (指导老师指导小组数量设置上限,总指导小组不超过9组)
+## Quick Start
 
-选择需谨慎，名次会影响分数
+```bash
+# Install base dependencies
+pip install -r requirements.txt
 
-## 成绩评定
+# Install tracker-specific dependencies
+pip install -r code/requirements.txt
 
-课程设计成绩的评价依据 = 工作量(15%)+个人工作表现(10%)+创新性(20%)
-+实验与分析(35%)+报告写作(10%)+报告答辩及成果展示(10%)。
+# Run evaluation
+python evaluation/run_eval.py --tracker_dir <path> --dataset <name>
+```
 
-| 评分内容 | 综合表现 |              | 设计报告 |            |          |               答辩 |
-| -------- | -------: | -----------: | -------: | ---------: | -------: | -----------------: |
-| 细分项目 |   工作量 | 个人工作表现 |   创新性 | 实验与分析 | 报告写作 | 报告答辩及成果展示 |
-| 评价比重 |     0.15 |         0.10 |     0.20 |       0.35 |     0.10 |               0.10 |
+## References
 
-*切记要独立完成，不得抄袭
+[1] Zhu J, Lai S, Chen X, et al. Visual prompt multi-modal tracking. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition 2023: 9516-9526.
 
-抄袭者，课程成绩一律按不及格
-由于答辩时间有限，报告答辩时的成果展示建议采用**视频展示**的方式进行，包括具体的算法运行、性能指标计算过程、报告的AI撰写占比及评价等自证内容，不超过1分30秒。
-课程设计成绩:按答辩时的评审老师评分平均值计算，采用百分制评定。
+[2] Wang X, Li J, Zhu L, et al. VisEvent: Reliable object tracking via collaboration of frame and event flows. IEEE transactions on cybernetics. 2023, 54(3):1997-2010.
 
-小组内每位同学的工作占比是需要你们自行商量的，在最后答辩的报告封面给出
+[3] Tang C, Wang X, Huang J, et al. Revisiting color-event based tracking: A unified network, dataset, and metric. Pattern Recognition. 2025, 7:112718.
 
-我们会对一个小组的每一位同学进行打分
+## License
 
-所以大家在组队时，不用太担心公平性问题。也不要怕一个队里，人人都很强，自己就不突出，因为我们会综合考虑整个团队的工作量
-
-4个不同的实现途径，肯定工作量要＞2个1个嘛
-
-另外，团队合作很重要，根据往年经验，不和谐的团队往往分数不会很高。
-
-## practices
-
-作品提交：纸质报告，答辩，幻灯片， 视频
-
-需说明人工智能使用
-
-答辩时长有上限 谁讲都行
-
-学院默认不提供计算资源（这个不用担心）
-
-建议主动联系导师 学生够卷 需要超常发挥 “30几页体现不了工作量”
-
-据说可以当作科研经历
-
-汇报中每个人的工作量影响个人评分 失败的方案有意义的也算工作量
+This project is for academic and research purposes.

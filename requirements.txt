@@ -1,0 +1,12 @@
+# Base Dependencies
+
+# Core
+torch>=2.0.0
+numpy
+opencv-python
+matplotlib
+pillow
+
+# Utilities
+tqdm
+pyyaml

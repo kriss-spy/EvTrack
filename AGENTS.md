@@ -2,7 +2,7 @@
 
 ## Project
 
-Pattern Recognition course design project: **Event Camera-based Object Tracking (EvTrack)**. The goal is to reproduce and evaluate [ViPT](https://github.com/jiawen-zhu/ViPT) on event-camera tracking benchmarks. All code lives under `EvTrack/`.
+**EvTrack**: Event Camera-based Object Tracking. The goal is to reproduce and evaluate [ViPT](https://github.com/jiawen-zhu/ViPT) on event-camera tracking benchmarks.
 
 ## Key Datasets
 
@@ -27,8 +27,9 @@ Pattern Recognition course design project: **Event Camera-based Object Tracking 
 ## Conventions
 
 - Language: Python (`.gitignore` is Python-centric).
-- README files use Chinese for narrative content; keep that convention.
-- Single reproduction track: ViPT. Code lives under `EvTrack/`.
+- Root `README.md` is English and technical (project-facing).
+- Course-related narrative content lives in `docs/` and uses Chinese; keep that convention there.
+- Single reproduction track: ViPT. Code lives under `code/`.
 
 ## Grading Context
 
