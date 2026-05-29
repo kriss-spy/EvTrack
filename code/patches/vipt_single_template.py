@@ -100,9 +100,9 @@ class ViPTTrack(BaseTracker):
         self.state = clip_box(self.map_box_back(pred_box, resize_factor), H, W, margin=10)
 
         # ---------- 模板动态更新：加权----------
-        if (self.update_interval is not None and
-                self.update_count >self.update_interval and
-                max_score > self.update_threshold):
+        if (
+                self.update_count >UPDATE_INTERVALand
+                max_score > SCORE_THRESHOLD):
 
             self.update_count=0
             # 从当前帧裁剪目标区域
