@@ -3,7 +3,6 @@ from lib.models.vipt import build_viptrack
 from lib.test.tracker.basetracker import BaseTracker
 import torch
 
-from lib.test.tracker.vipt_single_template import SCORE_THRESHOLD
 from lib.test.tracker.vis_utils import gen_visualization
 from lib.test.utils.hann import hann2d
 from lib.train.data.processing_utils import sample_target
