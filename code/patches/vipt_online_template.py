@@ -16,7 +16,7 @@ from lib.utils.box_ops import clip_box
 from lib.utils.ce_utils import generate_mask_cond
 
 UPDATE_INTERVAL=10
-SCORE_THRESHOLD=0.8
+SCORE_THRESHOLD=0.7
 
 class ViPTTrack(BaseTracker):
     def __init__(self, params):
