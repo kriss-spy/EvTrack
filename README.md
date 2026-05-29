@@ -21,12 +21,16 @@ This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Track
 
 ```
 .
-├── code/           # Tracker implementation (ViPT)
-├── evaluation/     # Shared evaluation metrics and scripts
-├── data/           # Dataset paths and setup guides (not raw data)
-├── results/        # Evaluation outputs, plots, videos
-├── docs/           # Documentation and guides
-└── requirements.txt
+├── code/               # Tracker implementation
+│   ├── vipt/           #   ViPT upstream (submodule)
+│   └── patches/        #   Team modifications
+├── evaluation/         # Shared evaluation metrics and scripts
+├── data/               # Dataset paths and setup guides (not raw data)
+├── results/            # Evaluation outputs, plots, videos
+├── docs/               # Documentation and guides
+├── AGENTS.md           # Agent workflow instructions
+├── requirements.txt
+└── README.md
 ```
 
 ## Quick Start
