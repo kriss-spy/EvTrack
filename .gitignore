@@ -217,5 +217,12 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# EvTrack project artifacts
+data/*
+!data/.gitkeep
+!data/README.md
+results/*
+!results/.gitkeep
+
 # Vendored upstream tracker repositories
 **/upstream/
