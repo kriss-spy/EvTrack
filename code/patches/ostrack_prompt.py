@@ -44,12 +44,14 @@ class ViPTrack(nn.Module):
                 ce_template_mask=None,
                 ce_keep_rate=None,
                 return_last_attn=False,
+                online_score=None
                 ):
 
         #更改：前向支持额外输入online模板
         x, aux_dict = self.backbone(z=template, x=search,online_z=online_template,
                                     ce_template_mask=ce_template_mask,
                                     online_ce_mask=online_ce_mask,
+                                    online_score=online_score,
                                     ce_keep_rate=ce_keep_rate,
                                     return_last_attn=return_last_attn
                                     )

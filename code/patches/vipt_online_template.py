@@ -1,4 +1,5 @@
 import math
+
 from lib.models.vipt import build_viptrack
 from lib.test.tracker.basetracker import BaseTracker
 import torch
@@ -13,6 +14,7 @@ import vot
 from lib.test.tracker.data_utils import PreprocessorMM
 from lib.utils.box_ops import clip_box
 from lib.utils.ce_utils import generate_mask_cond
+from skimage.metrics import structural_similarity as ssim
 
 UPDATE_INTERVAL=10
 SCORE_THRESHOLD=0.7
@@ -21,7 +23,7 @@ class ViPTTrack(BaseTracker):
     def __init__(self, params):
         super(ViPTTrack, self).__init__(params)
         network = build_viptrack(params.cfg, training=False)
-        network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=True)
+        network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu',weights_only=False)['net'], strict=True)
         self.cfg = params.cfg
         self.network = network.cuda()
         self.network.eval()
@@ -50,9 +52,12 @@ class ViPTTrack(BaseTracker):
         self.initial_mask_z=None #用来保存初始mask
         self.online_z_tensor=None #在线更新模板
         self.online_mask_z=None #在线更新模板的mask
+        self.online_score=None
+        self.trust_z_list={}
 
     def initialize(self, image, info: dict):
         # forward the template once
+
         z_patch_arr, resize_factor, z_amask_arr  = sample_target(image, info['init_bbox'], self.params.template_factor,
                                                     output_sz=self.params.template_size)
         self.z_patch_arr = z_patch_arr
@@ -60,12 +65,16 @@ class ViPTTrack(BaseTracker):
         with torch.no_grad():
             self.initial_z_tensor=template
             self.online_z_tensor = self.initial_z_tensor.clone()
+            # self.online_score=1
+            self.trust_z_list['z']=self.initial_z_tensor.clone()
+            self.trust_z_list['score']=SCORE_THRESHOLD
 
         if self.cfg.MODEL.BACKBONE.CE_LOC:
             template_bbox = self.transform_bbox_to_crop(info['init_bbox'], resize_factor,
                                                         template.device).squeeze(1)
             self.initial_mask_z = generate_mask_cond(self.cfg, 1, template.device, template_bbox)
             self.online_mask_z=self.initial_mask_z.clone()
+
 
         # save states
         self.state = info['init_bbox']
@@ -104,20 +113,33 @@ class ViPTTrack(BaseTracker):
         # ---------- 模板动态更新----------
         if self.update_count > UPDATE_INTERVAL and max_score > SCORE_THRESHOLD:
 
-            self.update_count=0
-
             # 从当前帧裁剪目标区域+生成先验mask
             target_patch_arr, target_resize_factor, target_amask_arr = sample_target(image, self.state,
                                                    self.params.template_factor,
                                                    output_sz=self.params.template_size)
             target_tensor = self.preprocessor.process(target_patch_arr)
 
-            self.online_z_tensor=target_tensor
+            #计算一个score，我们的在线模板和最信任模板的相似性
+            im1 = self.trust_z_list['z'].squeeze(0).cpu().numpy()[:3] # [C, H, W]
+            im2 = target_tensor.squeeze(0).cpu().numpy()[:3]  # [C, H, W]
+            # 将通道维移到最后：[H, W, C]
+            im1 = im1.transpose(1, 2, 0)
+            im2 = im2.transpose(1, 2, 0)
 
-            if self.cfg.MODEL.BACKBONE.CE_LOC:
-                new_bbox = self.transform_bbox_to_crop(self.state, target_resize_factor,
-                                                       target_tensor.device).squeeze(1)
-                self.online_mask_z = generate_mask_cond(self.cfg, 1, target_tensor.device, new_bbox)
+            # 调用 SSIM（win_size 自动取 min(H,W)，一般 >=7）
+            if ssim(im1, im2, channel_axis=-1,data_range=1.0)>SCORE_THRESHOLD:
+                self.update_count = 0
+                self.online_z_tensor=target_tensor
+
+                if max_score>self.trust_z_list['score']:
+                    self.trust_z_list['z']=target_tensor
+                    self.trust_z_list['score']=max_score
+
+                # self.online_score=score
+                if self.cfg.MODEL.BACKBONE.CE_LOC:
+                    new_bbox = self.transform_bbox_to_crop(self.state, target_resize_factor,
+                                                           target_tensor.device).squeeze(1)
+                    self.online_mask_z = generate_mask_cond(self.cfg, 1, target_tensor.device, new_bbox)
 
 
         # for debug，结果可视化

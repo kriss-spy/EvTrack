@@ -182,7 +182,7 @@ class VisionTransformerCE(VisionTransformer):
         self.init_weights(weight_init)
 
     def forward_features(self, z, x,online_z=None, mask_z=None, mask_x=None,
-                         ce_template_mask=None,online_ce_mask=None, ce_keep_rate=None,
+                         ce_template_mask=None,online_ce_mask=None, ce_keep_rate=None,online_score=None,
                          return_last_attn=False):
 
         B, H, W = x.shape[0], x.shape[2], x.shape[3]
@@ -256,6 +256,7 @@ class VisionTransformerCE(VisionTransformer):
                 oz_feat = self.prompt_blocks[0](oz_feat)
                 oz_dte = feature2token(oz_feat)
                 oz_prompted=oz_dte
+                #event数据是不具有连续性的，
 
                 oz = oz + oz_dte
             else:
@@ -264,7 +265,10 @@ class VisionTransformerCE(VisionTransformer):
             # 添加位置编码（复用 pos_embed_z），因为online模板和原始模板大小永远一致
             oz += self.pos_embed_z
             #遵循原始的处理流程，会将z和x合成一个向量
-            z = torch.cat([z, oz], dim=1)
+            if online_score is not None:
+                z = torch.cat([z, oz*online_score], dim=1)
+            else:
+                z = torch.cat([z, oz], dim=1)
 
             # ---------- 处理 CE mask ----------
             if ce_template_mask is not None:
@@ -369,7 +373,7 @@ class VisionTransformerCE(VisionTransformer):
 
                     z_feat = torch.cat([z_feat, z_prompt_feat], dim=1)
                     x_feat = torch.cat([x_feat, x_prompt_feat], dim=1)
-                    z_feat = self.prompt_blocks[i](z_feat)
+                    z_feat = self.prompt_blocks[i](z_feat)#层注意力
                     x_feat = self.prompt_blocks[i](x_feat)
 
                     z = feature2token(z_feat)
@@ -426,11 +430,11 @@ class VisionTransformerCE(VisionTransformer):
 
         return x, aux_dict
 
-    def forward(self, z, x, online_z=None,ce_template_mask=None, online_ce_mask=None,ce_keep_rate=None,
+    def forward(self, z, x, online_z=None,ce_template_mask=None, online_ce_mask=None,ce_keep_rate=None,online_score=None,
                 tnc_keep_rate=None,
                 return_last_attn=False):
 
-        x, aux_dict = self.forward_features(z, x, online_z=online_z,online_ce_mask=online_ce_mask,ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,)
+        x, aux_dict = self.forward_features(z, x, online_score=online_score,online_z=online_z,online_ce_mask=online_ce_mask,ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,)
 
 
         return x, aux_dict
