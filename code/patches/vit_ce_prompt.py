@@ -354,9 +354,9 @@ class VisionTransformerCE(VisionTransformer):
                     z_feat = token2feature(z_tokens)
                     x_feat = token2feature(x_tokens)
 
-                    if online_z is not None:
-                        oz_feat=token2feature(online_z_tokens)
-                        z_prompted+=oz_prompted
+                    # if online_z is not None:
+                    #     oz_feat=token2feature(online_z_tokens)
+                    #     z_prompted+=oz_prompted
 
                     z_prompted = self.prompt_norms[i](z_prompted)
                     x_prompted = self.prompt_norms[i](x_prompted)
@@ -364,6 +364,8 @@ class VisionTransformerCE(VisionTransformer):
                     x_prompt_feat = token2feature(x_prompted)
 
                     if online_z is not None:
+                        oz_feat = token2feature(online_z_tokens)
+                        oz_prompted=self.prompt_norms[i](oz_prompted)
                         oz_prompt_feat = token2feature(oz_prompted)
                         oz_feat=torch.cat([oz_feat,oz_prompt_feat],dim=1)
                         oz_feat=self.prompt_blocks[i](oz_feat)

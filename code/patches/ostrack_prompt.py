@@ -108,6 +108,7 @@ def build_viptrack(cfg, training=True):
     else:
         pretrained = ''
 
+    print(cfg.MODEL.BACKBONE.TYPE)
     if cfg.MODEL.BACKBONE.TYPE == 'vit_base_patch16_224_prompt':
         backbone = vit_base_patch16_224_prompt(pretrained, drop_path_rate=cfg.TRAIN.DROP_PATH_RATE,
                                                search_size=to_2tuple(cfg.DATA.SEARCH.SIZE),

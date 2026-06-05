@@ -50,10 +50,29 @@ class ViPTTrack(BaseTracker):
         # ---------- 新增：模板更新参数 ----------
         self.initial_z_tensor = None #用来保存初始模板
         self.initial_mask_z=None #用来保存初始mask
+        self.start_online=False
         self.online_z_tensor=None #在线更新模板
         self.online_mask_z=None #在线更新模板的mask
         self.online_score=None
         self.trust_z_list={}
+        self.count=0
+
+    def save_img(self,tensor):
+        self.count+=1
+        mean_6 = torch.tensor([0.485, 0.456, 0.406, 0.485, 0.456, 0.406]).view(1, 6, 1, 1)
+        std_6 = torch.tensor([0.229, 0.224, 0.225, 0.229, 0.224, 0.225]).view(1, 6, 1, 1)
+
+        img_t = tensor.to('cpu') * std_6 + mean_6
+        img_t = (img_t * 255.0).clamp(0, 255).squeeze(0)  # (6, H, W)
+
+        rgb1 = img_t[:3].permute(1, 2, 0).cpu().byte().numpy()  # RGB
+        rgb2 = img_t[3:6].permute(1, 2, 0).cpu().byte().numpy()  # 可能是 IR 或另一视角
+
+        cv2.imwrite('time/'+f"rgb_{self.count}.png", cv2.cvtColor(rgb1, cv2.COLOR_RGB2BGR))
+        cv2.imwrite('time/'+f"event_{self.count}.png", cv2.cvtColor(rgb2, cv2.COLOR_RGB2BGR))
+        return
+
+
 
     def initialize(self, image, info: dict):
         # forward the template once
@@ -65,6 +84,9 @@ class ViPTTrack(BaseTracker):
         with torch.no_grad():
             self.initial_z_tensor=template
             self.online_z_tensor = self.initial_z_tensor.clone()
+
+            self.save_img(self.online_z_tensor)
+
             # self.online_score=1
             self.trust_z_list['z']=self.initial_z_tensor.clone()
             self.trust_z_list['score']=SCORE_THRESHOLD
@@ -94,9 +116,15 @@ class ViPTTrack(BaseTracker):
 
 
         with torch.no_grad():
-            out_dict = self.network.forward(
-                template=self.initial_z_tensor, search=search, ce_template_mask=self.initial_mask_z,
-                online_template=self.online_z_tensor,online_ce_mask=self.online_mask_z)
+            if self.start_online:
+                out_dict = self.network.forward(
+                    template=self.initial_z_tensor, search=search, ce_template_mask=self.initial_mask_z,
+                    online_template=self.online_z_tensor,online_ce_mask=self.online_mask_z)
+            else:
+                out_dict = self.network.forward(
+                    template=self.initial_z_tensor, search=search, ce_template_mask=self.initial_mask_z,
+                    online_template=None,online_ce_mask=None)
+
 
         # add hann windows
         pred_score_map = out_dict['score_map']
@@ -109,6 +137,8 @@ class ViPTTrack(BaseTracker):
             dim=0) * self.params.search_size / resize_factor).tolist()  # (cx, cy, w, h) [0,1]
         # get the final box result
         self.state = clip_box(self.map_box_back(pred_box, resize_factor), H, W, margin=10)
+        if max_score>0.7:
+            self.start_online=True
 
         # ---------- 模板动态更新----------
         if self.update_count > UPDATE_INTERVAL and max_score > SCORE_THRESHOLD:
@@ -128,12 +158,14 @@ class ViPTTrack(BaseTracker):
 
             # 调用 SSIM（win_size 自动取 min(H,W)，一般 >=7）
             if ssim(im1, im2, channel_axis=-1,data_range=1.0)>SCORE_THRESHOLD:
+            # if True:
+                self.save_img(self.online_z_tensor)
                 self.update_count = 0
                 self.online_z_tensor=target_tensor
 
                 if max_score>self.trust_z_list['score']:
                     self.trust_z_list['z']=target_tensor
-                    self.trust_z_list['score']=max_score
+                    # self.trust_z_list['score']=max_score
 
                 # self.online_score=score
                 if self.cfg.MODEL.BACKBONE.CE_LOC:
