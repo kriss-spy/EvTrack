@@ -46,6 +46,19 @@ pip install -r code/requirements.txt
 python evaluation/run_eval.py --tracker_dir <path> --dataset <name>
 ```
 
+## Improvement
+
+And we have found some problems in the original vipt and ……  
+🎆SURPRISINGLY!!!🎆  
+we also have made a improvement to the original ViPT tracker to make it have better performance!
+
+- add a pair of online templates(include rgb and event),with simple alogrithm and clever little trick to avoid updating error template.
+- try many different recipe to fuse the data information and we're lucky to find a nice way 
+- TOTALLY WITHOUT ANY OTHER ADDITIONAL TRANING.Just use the orig pth file!
+
+The following GIF demonstrates the tracking performance improvements on a VisEvent benchmark sequence:
+![visevent video0079](./gif/video0079.gif)
+
 ## References
 
 [1] Zhu J, Lai S, Chen X, et al. Visual prompt multi-modal tracking. In Proceedings of the IEEE/CVF conference on computer vision and pattern recognition 2023: 9516-9526.
