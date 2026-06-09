@@ -36,6 +36,12 @@ This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Track
 ## Quick Start
 
 ```bash
+# Clone with submodule
+git clone --recurse-submodules https://github.com/kriss-spy/EvTrack
+
+# Or if already cloned:
+# git submodule update --init
+
 # Install base dependencies
 pip install -r requirements.txt
 
