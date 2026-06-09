@@ -217,12 +217,18 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# EvTrack project artifacts
-data/*
-!data/.gitkeep
-!data/README.md
-results/*
-!results/.gitkeep
-
 # Vendored upstream tracker repositories
 **/upstream/
+!code/SDSTrack/upstream/
+
+# --- Agent Skills Specifics ---
+# If your scripts or assets generate local logs or temporary data
+**/logs/
+**/temp/
+**/*.tmp
+.agent/
+.skills_cache/
+
+# opencode config
+opencode.json
+.opencode/

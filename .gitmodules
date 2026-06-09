@@ -1,0 +1,3 @@
+[submodule "code/SDSTrack/upstream"]
+	path = code/SDSTrack/upstream
+	url = https://github.com/hoqolo/SDSTrack
