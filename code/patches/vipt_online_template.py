@@ -30,9 +30,17 @@ class ViPTTrack(BaseTracker):
         self.preprocessor = PreprocessorMM()
         self.state = None
 
+        # ---------- FP16 混合精度推理开关 ----------
+        self.use_fp16 = getattr(params, 'use_fp16', False)
+        if self.use_fp16:
+            self.network = self.network.half()
+            print("[ViPTTrack] FP16 mixed-precision inference enabled")
+
         self.feat_sz = self.cfg.TEST.SEARCH_SIZE // self.cfg.MODEL.BACKBONE.STRIDE
         # motion constrain
         self.output_window = hann2d(torch.tensor([self.feat_sz, self.feat_sz]).long(), centered=True).cuda()
+        if self.use_fp16:
+            self.output_window = self.output_window.half()
 
         # for debug
         if getattr(params, 'debug', None) is None:
@@ -81,6 +89,8 @@ class ViPTTrack(BaseTracker):
                                                     output_sz=self.params.template_size)
         self.z_patch_arr = z_patch_arr
         template = self.preprocessor.process(z_patch_arr)
+        if self.use_fp16:
+            template = template.half()
         with torch.no_grad():
             self.initial_z_tensor=template
             self.online_z_tensor = self.initial_z_tensor.clone()
@@ -113,7 +123,8 @@ class ViPTTrack(BaseTracker):
         x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
                                                                 output_sz=self.params.search_size)  # (x1, y1, w, h)
         search = self.preprocessor.process(x_patch_arr)
-
+        if self.use_fp16:
+            search = search.half()
 
         with torch.no_grad():
             if self.start_online:
@@ -148,6 +159,8 @@ class ViPTTrack(BaseTracker):
                                                    self.params.template_factor,
                                                    output_sz=self.params.template_size)
             target_tensor = self.preprocessor.process(target_patch_arr)
+            if self.use_fp16:
+                target_tensor = target_tensor.half()
 
             #计算一个score，我们的在线模板和最信任模板的相似性
             im1 = self.trust_z_list['z'].squeeze(0).cpu().numpy()[:3] # [C, H, W]

@@ -27,9 +27,17 @@ class ViPTTrack(BaseTracker):
         self.preprocessor = PreprocessorMM()
         self.state = None
 
+        # ---------- FP16 混合精度推理开关 ----------
+        self.use_fp16 = getattr(params, 'use_fp16', False)
+        if self.use_fp16:
+            self.network = self.network.half()
+            print("[ViPTTrack] FP16 mixed-precision inference enabled")
+
         self.feat_sz = self.cfg.TEST.SEARCH_SIZE // self.cfg.MODEL.BACKBONE.STRIDE
         # motion constrain
         self.output_window = hann2d(torch.tensor([self.feat_sz, self.feat_sz]).long(), centered=True).cuda()
+        if self.use_fp16:
+            self.output_window = self.output_window.half()
 
         # for debug
         if getattr(params, 'debug', None) is None:
@@ -55,6 +63,8 @@ class ViPTTrack(BaseTracker):
                                                     output_sz=self.params.template_size)
         self.z_patch_arr = z_patch_arr
         template = self.preprocessor.process(z_patch_arr)
+        if self.use_fp16:
+            template = template.half()
         with torch.no_grad():
             self.z_tensor = template
 
@@ -82,6 +92,8 @@ class ViPTTrack(BaseTracker):
         x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
                                                                 output_sz=self.params.search_size)  # (x1, y1, w, h)
         search = self.preprocessor.process(x_patch_arr)
+        if self.use_fp16:
+            search = search.half()
 
         with torch.no_grad():
             out_dict = self.network.forward(
@@ -101,7 +113,7 @@ class ViPTTrack(BaseTracker):
 
         # ---------- 模板动态更新：加权----------
         if (
-                self.update_count >UPDATE_INTERVALand
+                self.update_count > UPDATE_INTERVAL and
                 max_score > SCORE_THRESHOLD):
 
             self.update_count=0
@@ -110,6 +122,8 @@ class ViPTTrack(BaseTracker):
                                                    self.params.template_factor,
                                                    output_sz=self.params.template_size)
             target_tensor = self.preprocessor.process(target_patch_arr)
+            if self.use_fp16:
+                target_tensor = target_tensor.half()
 
             # 加权更新，第一种初始状态和当前状态加权
             # self.z_tensor=self.initial_z_tensor*(1-max_score)+target_tensor*max_score
