@@ -104,23 +104,21 @@ def clone_sdstrack(paths: Paths):
         return
     print("[Setup] Cloning SDSTrack...")
     import subprocess
-    import tempfile
-    # If workspace exists and is non-empty, clone to temp and move contents
-    if paths.ws.exists() and any(paths.ws.iterdir()):
-        temp_dir = Path(tempfile.mkdtemp(prefix="sdstrack_clone_"))
-        clone_target = temp_dir / "sdstrack"
-        subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(clone_target)], check=True)
-        for item in clone_target.iterdir():
-            dest = paths.ws / item.name
-            if dest.exists():
-                if dest.is_dir():
-                    shutil.rmtree(dest, ignore_errors=True)
-                else:
-                    dest.unlink()
-            shutil.move(str(item), str(dest))
+    # Clone into a temp dir first, then move contents to workspace
+    # (workspace dir may already have data/ results/ subdirs created by ensure_dirs)
+    temp_dir = paths.ws / ".upstream_tmp"
+    if temp_dir.exists():
         shutil.rmtree(temp_dir, ignore_errors=True)
-    else:
-        subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(paths.ws)], check=True)
+    subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(temp_dir)], check=True)
+    for item in temp_dir.iterdir():
+        dest = paths.ws / item.name
+        if dest.exists():
+            if dest.is_dir():
+                shutil.rmtree(dest, ignore_errors=True)
+            else:
+                dest.unlink()
+        shutil.move(str(item), str(paths.ws))
+    shutil.rmtree(temp_dir, ignore_errors=True)
     print("[Setup] Clone complete")
 
 
