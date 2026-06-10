@@ -232,3 +232,10 @@ __marimo__/
 # opencode config
 opencode.json
 .opencode/
+
+# Agent-related files (local only)
+AGENTS.md
+CONTEXT.md
+skills-lock.json
+.agents/
+docs/agents/

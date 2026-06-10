@@ -8,6 +8,11 @@
         "git+https://github.com/googlecolab/colab-mcp"
       ],
       "enabled": true
+    },
+    "jupyter-vscode": {
+      "type": "remote",
+      "url": "http://localhost:9123/sse",
+      "enabled": true
     }
   }
 }
