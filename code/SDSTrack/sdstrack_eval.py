@@ -404,15 +404,22 @@ def run_evaluation_direct(paths: Paths, sequences: List[str]) -> List[str]:
         if len(vis_files) != len(gt):
             print(f"  [Warning] {seq_name}: frame count mismatch ({len(vis_files)} vs {len(gt)})")
         
-        # Run tracking
+        # Run tracking with prefetch to overlap CPU I/O with GPU compute
         result = np.zeros_like(gt)
         result[0] = gt[0]
         
         start_time = time.time()
         
         try:
-            for frame_idx, (rgb_path, evt_path) in enumerate(zip(vis_files, evt_files)):
-                image = get_x_frame(str(rgb_path), str(evt_path), dtype="rgbrgb")
+            # Prefetch first frame
+            next_image = get_x_frame(str(vis_files[0]), str(evt_files[0]), dtype="rgbrgb")
+            
+            for frame_idx in range(len(vis_files)):
+                image = next_image
+                
+                # Prefetch next frame while GPU is busy
+                if frame_idx + 1 < len(vis_files):
+                    next_image = get_x_frame(str(vis_files[frame_idx + 1]), str(evt_files[frame_idx + 1]), dtype="rgbrgb")
                 
                 if frame_idx == 0:
                     wrapper.initialize(image, gt[0].tolist())
@@ -499,14 +506,35 @@ def main():
         print(f"[{i+1}/{total_tars}] Processing {tar_name}")
         print(f"{'='*60}")
 
-        # Check disk
-        total, used, free = shutil.disk_usage("/")
+        # Check disk on the workspace (not just root)
+        total, used, free = shutil.disk_usage(paths.ws)
         print(f"  [Disk] Free: {free / 1e9:.1f} GB")
-        if free < 5e9:
+        if free < 10e9:  # 10GB threshold — be more aggressive
             print("  [Warning] Low disk space! Cleaning up...")
             for seq_dir in paths.test_subset.iterdir():
                 if seq_dir.is_dir() and seq_dir.name in existing_results:
                     shutil.rmtree(seq_dir, ignore_errors=True)
+            # Re-check
+            total, used, free = shutil.disk_usage(paths.ws)
+            if free < 10e9:
+                # Force evaluation of pending batch to free more space
+                if pending_seqs:
+                    batch = sorted(pending_seqs)
+                    print(f"\n[Eval] Force-running {len(batch)} sequences to free disk...")
+                    done = run_evaluation_direct(paths, batch)
+                    for seq in done:
+                        seq_dir = paths.test_subset / seq
+                        if seq_dir.exists():
+                            shutil.rmtree(seq_dir, ignore_errors=True)
+                        pending_seqs.discard(seq)
+                        existing_results.add(seq)
+                    progress["completed_seqs"].extend(done)
+                    print(f"[Eval] Done: {len(done)}")
+                total, used, free = shutil.disk_usage(paths.ws)
+                print(f"  [Disk] After cleanup: {free / 1e9:.1f} GB")
+                if free < 5e9:
+                    print("  [ERROR] Still critically low on disk. Aborting.")
+                    break
 
         # Download tar
         print(f"  [Download] {tar_name}...")
