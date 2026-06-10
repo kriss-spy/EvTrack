@@ -104,7 +104,23 @@ def clone_sdstrack(paths: Paths):
         return
     print("[Setup] Cloning SDSTrack...")
     import subprocess
-    subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(paths.ws)], check=True)
+    import tempfile
+    # If workspace exists and is non-empty, clone to temp and move contents
+    if paths.ws.exists() and any(paths.ws.iterdir()):
+        temp_dir = Path(tempfile.mkdtemp(prefix="sdstrack_clone_"))
+        clone_target = temp_dir / "sdstrack"
+        subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(clone_target)], check=True)
+        for item in clone_target.iterdir():
+            dest = paths.ws / item.name
+            if dest.exists():
+                if dest.is_dir():
+                    shutil.rmtree(dest, ignore_errors=True)
+                else:
+                    dest.unlink()
+            shutil.move(str(item), str(dest))
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    else:
+        subprocess.run(["git", "clone", "https://github.com/hoqolo/SDSTrack.git", str(paths.ws)], check=True)
     print("[Setup] Clone complete")
 
 
