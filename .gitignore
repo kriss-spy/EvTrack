@@ -1,0 +1,56 @@
+# Byte-compiled / optimized Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# PyTorch / model weights
+*.pth
+*.pth.tar
+pretrained/
+modelsets/
+
+# Training outputs
+output/
+tensorboard/
+*.log
+
+# VOT toolkit
+vot-toolkit-python/
+
+# External benchmarks
+VisEvent_SOT_Benchmark-main/
+
+# User scratch scripts
+mycode/
+
+# Local environment overrides
+lib/test/evaluation/local.py
+lib/train/admin/local.py
+
+# Generated results
+RGBE_workspace/results/
+RGBT_workspace/results/
+Depthtrack_workspace/results/
+VOT22RGBD_workspace/results/
+VisEvent_SOT_Benchmark-main/results/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Archives
+*.tar
+*.zip
+*.tar.gz
