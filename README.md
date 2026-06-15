@@ -59,8 +59,9 @@ And we have found some problems in the original vipt and ……
 we also have made a improvement to the original ViPT tracker to make it have better performance!
 
 - add a pair of online templates(include rgb and event),with simple alogrithm and clever little trick to avoid updating error template.
-- try many different recipe to fuse the data information and we're lucky to find a nice way 
 - TOTALLY WITHOUT ANY OTHER ADDITIONAL TRANING.Just use the orig pth file!
+
+**WARNING:Our approach cannot fundamentally solve vipt's problem; it is alike a "remedial measure". When orig result is quite bad, this method still cannot solve the problem. **
 
 The following GIF demonstrates the tracking performance improvements on a VisEvent benchmark sequence:
 ![visevent video0079](./gif/video0079.gif)
