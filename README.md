@@ -67,7 +67,7 @@ The following GIF demonstrates the tracking performance improvements on some Vis
 ![visevent video0079](./gif/video0079.gif)
 ![visevent video0079](./gif/compare2.gif)
 ![visevent video0079](./gif/compare3.gif)
-![visevent video0079](./gif/comapre4.gif)
+![visevent video0079](./gif/compare4.gif)
 
 **AND WE STILL FIND IN SOME SITUATIONS THAT THIS METHOD WILL HURT PERFORMANCE🫥**
 
