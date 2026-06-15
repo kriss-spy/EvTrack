@@ -64,9 +64,12 @@ we also have made a improvement to the original ViPT tracker to make it have bet
 **WARNING:Our approach cannot fundamentally solve vipt's problem; it is alike a "remedial measure". When orig result is quite bad, this method still cannot solve the problem.**
 
 The following GIF demonstrates the tracking performance improvements on some VisEvent benchmark sequences:
-![visevent video0079](./gif/video0079.gif)
-![visevent video0079](./gif/compare2.gif)
-![visevent video0079](./gif/compare3.gif)
+![visevent video0079](./gif/video0079.gif)  
+
+![visevent video0079](./gif/compare2.gif)  
+
+![visevent video0079](./gif/compare3.gif)  
+
 ![visevent video0079](./gif/compare4.gif)
 
 **AND WE STILL FIND IN SOME SITUATIONS THAT THIS METHOD WILL HURT PERFORMANCE🫥**
