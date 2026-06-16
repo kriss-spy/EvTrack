@@ -179,7 +179,7 @@ def apply_patches(paths: Paths):
         )
         test_script.write_text(content)
 
-    # Run create_default_local_file
+    # Run create_default_local_file (optional — local files are already patched above)
     import subprocess
     try:
         result = subprocess.run(
@@ -190,8 +190,8 @@ def apply_patches(paths: Paths):
             cwd=paths.ws, check=True, capture_output=True, text=True
         )
     except subprocess.CalledProcessError as e:
-        print(f"[Setup Error] create_default_local_file.py failed:\n{e.stderr}")
-        raise
+        print(f"[Setup Warning] create_default_local_file.py failed (non-fatal):\n{e.stderr}")
+        print("[Setup Warning] Continuing with manually patched local files...")
 
     flag.write_text("done")
     print(f"[Setup] Patched {patched} files, fixed paths")
