@@ -147,6 +147,8 @@ def main():
                         help="File containing sequence names (one per line)")
     parser.add_argument("--skip-setup", action="store_true",
                         help="Skip setup (clone, patch, download)")
+    parser.add_argument("--force-patches", action="store_true",
+                        help="Force re-apply patches even if already applied")
     args = parser.parse_args()
 
     # Set workspace
@@ -165,6 +167,11 @@ def main():
     # Setup
     if not args.skip_setup:
         clone_sdstrack(paths)
+        if args.force_patches:
+            flag = paths.ws / ".patches_applied"
+            if flag.exists():
+                flag.unlink()
+                print("[Setup] Force re-applying patches...")
         apply_patches(paths)
         download_models(paths)
 
