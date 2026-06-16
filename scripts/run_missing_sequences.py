@@ -63,17 +63,31 @@ class Paths:
 
 # Add common paths to find sdstrack_eval.py
 _script_dir = Path(__file__).resolve().parent
-for _search in [_script_dir, _script_dir.parent / "code" / "SDSTrack", _script_dir / ".." / "code" / "SDSTrack"]:
+_search_paths = [
+    _script_dir,
+    _script_dir.parent / "code" / "SDSTrack",
+    _script_dir / ".." / "code" / "SDSTrack",
+    Path.cwd() / "code" / "SDSTrack",
+    Path.cwd() / "SDSTrack",
+    Path.cwd(),
+]
+for _search in _search_paths:
     if (_search / "sdstrack_eval.py").exists():
         sys.path.insert(0, str(_search))
         break
+else:
+    print("[Error] sdstrack_eval.py not found. Searched:")
+    for p in _search_paths:
+        print(f"  - {p}")
+    print("\nWorkaround: set PYTHONPATH explicitly:")
+    print("  PYTHONPATH=/path/to/code/SDSTrack python scripts/run_missing_sequences.py ...")
+    sys.exit(1)
 
 # Reuse setup functions from sdstrack_eval if available
 try:
     from sdstrack_eval import clone_sdstrack, apply_patches, download_models, run_evaluation_direct, CHECKPOINT_FILE, PRETRAIN_FILE
-except ImportError:
-    print("[Error] sdstrack_eval.py not found.")
-    print("        Make sure this script is run from the EvTrack repo (or that sdstrack_eval.py is on PYTHONPATH)")
+except ImportError as e:
+    print(f"[Error] Failed to import from sdstrack_eval: {e}")
     sys.exit(1)
 
 
