@@ -179,6 +179,34 @@ def apply_patches(paths: Paths):
         )
         test_script.write_text(content)
 
+    # Patch lmdb_utils to avoid broken lmdb import (we don't use LMDB for VisEvent)
+    lmdb_utils = paths.ws / "lib" / "utils" / "lmdb_utils.py"
+    if lmdb_utils.exists():
+        print("[Setup] Patching lmdb_utils.py to avoid lmdb import...")
+        lmdb_utils.write_text("""
+# Stub: lmdb_utils.py — LMDB is not needed for VisEvent evaluation
+# See sdstrack_eval.py apply_patches
+import numpy as np
+import cv2
+import json
+
+LMDB_ENVS = dict()
+LMDB_HANDLES = dict()
+LMDB_FILELISTS = dict()
+
+def get_lmdb_handle(name):
+    raise NotImplementedError("LMDB is not used for VisEvent evaluation")
+
+def decode_img(lmdb_fname, key_name):
+    raise NotImplementedError("LMDB is not used for VisEvent evaluation")
+
+def decode_str(lmdb_fname, key_name):
+    raise NotImplementedError("LMDB is not used for VisEvent evaluation")
+
+def decode_json(lmdb_fname, key_name):
+    raise NotImplementedError("LMDB is not used for VisEvent evaluation")
+""")
+
     # Run create_default_local_file (optional — local files are already patched above)
     import subprocess
     try:
