@@ -125,9 +125,14 @@ def apply_patches(paths: Paths):
         print("[Setup] Patches already applied")
         return
 
+    print("[Setup] Applying compatibility patches...")
+
+    # Reset loader.py from git to avoid double-patching corruption
     loader = paths.ws / "lib" / "train" / "data" / "loader.py"
     if loader.exists():
-        print("[Setup] Applying compatibility patches...")
+        import subprocess
+        subprocess.run(["git", "checkout", "lib/train/data/loader.py"],
+                       cwd=paths.ws, check=False, capture_output=True)
         content = loader.read_text()
         if "import collections.abc" not in content:
             content = content.replace("import collections", "import collections\nimport collections.abc")
