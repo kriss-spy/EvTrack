@@ -2,15 +2,11 @@
 """
 Compute SDSTrack metrics (Success AUC, Precision @ 20px) from result files.
 
-Usage on RunPod:
+Usage:
     python compute_metrics.py \
-        --results /workspace/sdstrack/RGBE_workspace/results/VisEvent/cvpr2024_rgbe \
-        --dataset /workspace/sdstrack/data/visevent/test/test_subset
-
-Outputs:
-    - Success AUC
-    - Precision @ 20px
-    - Per-sequence metrics JSON
+        --results /path/to/results \
+        --dataset /path/to/test_subset \
+        --output metrics.json
 """
 
 import os
@@ -18,7 +14,6 @@ import sys
 import json
 import glob
 import argparse
-from pathlib import Path
 
 import numpy as np
 
@@ -37,12 +32,10 @@ def compute_iou(box1, box2):
 
 def compute_metrics(results_dir, gt_base):
     if not os.path.exists(results_dir):
-        print("ERROR: Results directory not found.")
-        return None
+        print("ERROR: Results directory not found."); return None
     files = sorted(glob.glob(os.path.join(results_dir, "*.txt")))
     if not files:
-        print("ERROR: No result files found.")
-        return None
+        print("ERROR: No result files found."); return None
     print(f"Processing {len(files)} result files...")
     all_ious, all_dists = [], []
     seq_metrics = []
@@ -50,18 +43,14 @@ def compute_metrics(results_dir, gt_base):
         seq = os.path.basename(res_file).replace(".txt", "")
         gt_file = os.path.join(gt_base, seq, "groundtruth.txt")
         if not os.path.exists(gt_file):
-            print(f"  Skipping {seq} (no groundtruth)")
-            continue
+            print(f"  Skipping {seq} (no groundtruth)"); continue
         try:
             pred = np.loadtxt(res_file, delimiter=",")
             gt = np.loadtxt(gt_file, delimiter=",")
         except Exception:
-            print(f"  Skipping {seq} (load error)")
-            continue
-        if pred.ndim == 1:
-            pred = pred.reshape(1, -1)
-        if gt.ndim == 1:
-            gt = gt.reshape(1, -1)
+            print(f"  Skipping {seq} (load error)"); continue
+        if pred.ndim == 1: pred = pred.reshape(1, -1)
+        if gt.ndim == 1: gt = gt.reshape(1, -1)
         n = min(len(pred), len(gt))
         pred, gt = pred[:n], gt[:n]
         seq_ious, seq_dists = [], []
@@ -80,13 +69,10 @@ def compute_metrics(results_dir, gt_base):
             "mean_dist": float(np.mean(seq_dists)),
         })
     if not all_ious:
-        print("No valid data to compute metrics.")
-        return None
-    # Success AUC
+        print("No valid data to compute metrics."); return None
     thresholds = np.arange(0, 1.01, 0.01)
     success_rates = [np.mean(np.array(all_ious) >= t) for t in thresholds]
     auc = np.mean(success_rates)
-    # Precision @ 20px
     precision = np.mean(np.array(all_dists) < 20)
     print(f"\n{'='*50}")
     print(f"Overall Metrics")
@@ -105,9 +91,9 @@ def compute_metrics(results_dir, gt_base):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--results", type=str, required=True, help="Path to results directory")
-    parser.add_argument("--dataset", type=str, required=True, help="Path to test subset directory")
-    parser.add_argument("--output", type=str, default="metrics.json", help="Output JSON file")
+    parser.add_argument("--results", type=str, required=True)
+    parser.add_argument("--dataset", type=str, required=True)
+    parser.add_argument("--output", type=str, default="metrics.json")
     args = parser.parse_args()
     metrics = compute_metrics(args.results, args.dataset)
     if metrics:
