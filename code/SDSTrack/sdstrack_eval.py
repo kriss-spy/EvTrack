@@ -181,13 +181,17 @@ def apply_patches(paths: Paths):
 
     # Run create_default_local_file
     import subprocess
-    subprocess.run(
-        ["python", "tracking/create_default_local_file.py",
-         "--workspace_dir", str(paths.ws),
-         "--data_dir", str(paths.data),
-         "--save_dir", str(paths.ws / "output")],
-        cwd=paths.ws, check=True, capture_output=True
-    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "tracking/create_default_local_file.py",
+             "--workspace_dir", str(paths.ws),
+             "--data_dir", str(paths.data),
+             "--save_dir", str(paths.ws / "output")],
+            cwd=paths.ws, check=True, capture_output=True, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"[Setup Error] create_default_local_file.py failed:\n{e.stderr}")
+        raise
 
     flag.write_text("done")
     print(f"[Setup] Patched {patched} files, fixed paths")
