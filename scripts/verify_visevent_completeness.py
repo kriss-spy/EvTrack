@@ -4,32 +4,30 @@ Verify VisEvent Test Set Completeness for SDSTrack Evaluation
 =============================================================
 
 Designed to run on a machine with the **full VisEvent dataset** locally
-(e.g., AutoDL) and the **SDSTrack workspace** (e.g., copied from RunPod).
+(e.g., AutoDL). Needs a small `completion_status.json` exported from RunPod.
 
 Usage:
-    # On a machine with the full dataset (e.g., AutoDL)
+    # 1. On RunPod (or any workspace machine):
+    python export_completion_status.py --workspace /workspace/sdstrack --output status.json
+    
+    # 2. Transfer the tiny status.json to AutoDL (or laptop):
+    scp runpod:/workspace/sdstrack/status.json ./
+    
+    # 3. On AutoDL (or laptop with full dataset):
     python verify_visevent_completeness.py \
         --dataset-path /path/to/VisEvent/test/test_subset \
-        --workspace /path/to/sdstrack_workspace
-
-    # If the workspace is on a different machine, copy progress.json + results/ locally:
-    scp runpod:/workspace/sdstrack/progress.json ./workspace/
-    scp -r runpod:/workspace/sdstrack/RGBE_workspace/results ./workspace/
-    python verify_visevent_completeness.py \
-        --dataset-path /path/to/VisEvent/test/test_subset \
-        --workspace ./workspace
+        --status-file ./status.json \
+        --report completeness_report.json
 
 Outputs:
     - completeness_report.json
     - analysis summary to stdout
 
 Requirements:
-    - access to the workspace directory (progress.json + results/)
     - access to the full VisEvent test subset directory
+    - completion_status.json from the workspace
 """
 
-import os
-import sys
 import json
 import argparse
 from pathlib import Path
@@ -46,7 +44,7 @@ def load_official_sequences(dataset_path: Path) -> Set[str]:
     """
     if not dataset_path.exists():
         print(f"[Error] Dataset path does not exist: {dataset_path}")
-        sys.exit(1)
+        raise SystemExit(1)
 
     print(f"[Scan] Reading official sequences from {dataset_path}...")
     official: Set[str] = set()
@@ -61,24 +59,17 @@ def load_official_sequences(dataset_path: Path) -> Set[str]:
     return official
 
 
-def load_progress(progress_path: Path) -> Dict:
-    """Load progress.json or return empty structure."""
-    if progress_path.exists():
-        return json.loads(progress_path.read_text())
-    return {"completed_tars": [], "completed_seqs": [], "total_seqs": 0}
+def load_status(status_path: Path) -> Dict:
+    """Load completion_status.json exported from RunPod."""
+    if not status_path.exists():
+        print(f"[Error] Status file not found: {status_path}")
+        print("Run this on the workspace machine first:")
+        print("  python export_completion_status.py --workspace /workspace/sdstrack --output status.json")
+        raise SystemExit(1)
+    return json.loads(status_path.read_text())
 
 
-def load_completed_results(results_dir: Path) -> Set[str]:
-    """Load set of sequences that have result files."""
-    if not results_dir.exists():
-        return set()
-    return {f.stem for f in results_dir.glob("*.txt")}
-
-
-def analyze_sequence(
-    seq: str,
-    dataset_path: Path,
-) -> Dict:
+def analyze_sequence(seq: str, dataset_path: Path) -> Dict:
     """
     Inspect a single sequence on disk to determine why
     it might have been skipped.
@@ -151,43 +142,35 @@ def analyze_sequence(
 def main():
     parser = argparse.ArgumentParser(description="Verify VisEvent test completeness")
     parser.add_argument("--dataset-path", type=str, required=True,
-                        help="Path to VisEvent test_subset directory (e.g., /path/to/VisEvent/test/test_subset)")
-    parser.add_argument("--workspace", type=str, required=True,
-                        help="Path to SDSTrack workspace containing progress.json + results/")
+                        help="Path to VisEvent test_subset directory")
+    parser.add_argument("--status-file", type=str, required=True,
+                        help="Path to completion_status.json exported from RunPod")
     parser.add_argument("--report", type=str, default="completeness_report.json", help="Output JSON report")
     args = parser.parse_args()
 
     dataset_path = Path(args.dataset_path).resolve()
-    ws = Path(args.workspace).resolve()
-    paths = {
-        "progress": ws / "progress.json",
-        "results": ws / "RGBE_workspace" / "results" / "VisEvent" / "cvpr2024_rgbe",
-    }
+    status_path = Path(args.status_file).resolve()
 
     print("=" * 60)
     print("VisEvent Test Set Completeness Verification")
     print("=" * 60)
-    print(f"Dataset:   {dataset_path}")
-    print(f"Workspace: {ws}")
-    print(f"Progress:  {paths['progress']}")
-    print(f"Results:   {paths['results']}")
+    print(f"Dataset:    {dataset_path}")
+    print(f"Status:     {status_path}")
     print("=" * 60)
 
     # 1. Load official sequence list from local dataset
     official_seqs = load_official_sequences(dataset_path)
     print(f"\n[Official] Total VisEvent test sequences: {len(official_seqs)}")
 
-    # 2. Load progress
-    progress = load_progress(paths["progress"])
-    completed_seqs = set(progress.get("completed_seqs", []))
-    print(f"[Progress] Unique completed sequences: {len(completed_seqs)}")
+    # 2. Load exported status
+    status = load_status(status_path)
+    completed_seqs = set(status.get("completed_seqs", []))
+    result_seqs = set(status.get("result_seqs", []))
+    print(f"[Status]   Source: {status.get('source', 'unknown')}")
+    print(f"[Status]   Completed sequences: {len(completed_seqs)}")
+    print(f"[Status]   Result files: {len(result_seqs)}")
 
-    # 3. Load result files
-    result_seqs = load_completed_results(paths["results"])
-    print(f"[Results]  Result files on disk: {len(result_seqs)}")
-
-    # 4. Cross-check
-    # A sequence is truly "done" if it has a result file AND is in progress
+    # 3. Cross-check
     truly_done = completed_seqs & result_seqs
     missing_from_progress = official_seqs - completed_seqs
     missing_from_results = official_seqs - result_seqs
@@ -198,7 +181,7 @@ def main():
     print(f"  Missing from results:  {len(missing_from_results)}")
     print(f"  Total missing: {len(missing)}")
 
-    # 5. Analyze each missing sequence
+    # 4. Analyze each missing sequence
     print(f"\n[Analysis] Analyzing {len(missing)} missing sequences...")
     analysis = []
     for seq in sorted(missing):
@@ -206,7 +189,7 @@ def main():
         analysis.append(info)
         print(f"  {seq:40s} -> {info['recommendation']}")
 
-    # 6. Categorize
+    # 5. Categorize
     categories: Dict[str, List[str]] = {}
     for info in analysis:
         categories.setdefault(info["recommendation"], []).append(info["seq"])
@@ -220,12 +203,12 @@ def main():
             for s in seqs:
                 print(f"    - {s}")
 
-    # 7. Write report
+    # 6. Write report
     report = {
         "dataset_path": str(dataset_path),
-        "workspace": str(ws),
+        "status_source": status.get("source", "unknown"),
         "official_total": len(official_seqs),
-        "unique_completed_seqs": len(completed_seqs),
+        "completed_seqs": len(completed_seqs),
         "result_files": len(result_seqs),
         "truly_done": len(truly_done),
         "missing": len(missing),
@@ -237,7 +220,7 @@ def main():
     report_path.write_text(json.dumps(report, indent=2))
     print(f"\n[Report] Saved to {report_path}")
 
-    # 8. Recommend next steps
+    # 7. Recommend next steps
     print("\n" + "=" * 60)
     print("Recommended Next Steps")
     print("=" * 60)
