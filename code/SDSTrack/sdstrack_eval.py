@@ -34,14 +34,11 @@ from pathlib import Path
 from typing import Set, List, Optional
 
 import numpy as np
-from huggingface_hub import hf_hub_download
+import subprocess
 
 # =============================================================================
 # Configuration
 # =============================================================================
-
-# Hugging Face token (optional, for private repos or gated access)
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
 # Repositories
 HF_DATASET_REPO = "krisspy39/visevent"
@@ -52,10 +49,9 @@ HF_PRETRAIN_REPO = "krisspy39/vipt-ostrack"
 CHECKPOINT_FILE = "SDSTrack_cvpr2024_rgbe.pth.tar"
 PRETRAIN_FILE = "OSTrack_ep0300.pth.tar"
 
-# Common kwargs for hf_hub_download (pass token if available)
-HF_KWARGS = {}
-if HF_TOKEN:
-    HF_KWARGS["token"] = HF_TOKEN
+# Direct download URLs
+PRETRAIN_URL = f"https://huggingface.co/{HF_PRETRAIN_REPO}/resolve/main/{PRETRAIN_FILE}"
+CHECKPOINT_URL = f"https://huggingface.co/{HF_CHECKPOINT_REPO}/resolve/main/{CHECKPOINT_FILE}"
 
 # Dataset subset
 DATASET_SUBSET = "test"
@@ -225,19 +221,23 @@ def decode_json(lmdb_fname, key_name):
     print(f"[Setup] Patched {patched} files, fixed paths")
 
 
+def _wget(url: str, dest: Path):
+    """Download file via wget."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    print(f"[wget] {url} -> {dest}")
+    subprocess.run(
+        ["wget", "-q", "--show-progress", "--no-clobber", "-O", str(dest), url],
+        check=True,
+    )
+
+
 def download_models(paths: Paths):
-    """Download pretrained and checkpoint models from Hugging Face."""
+    """Download pretrained and checkpoint models from Hugging Face via wget."""
     # Pretrained (OSTrack)
     pretrain_path = paths.pretrained / PRETRAIN_FILE
     if not pretrain_path.exists():
         print(f"[Setup] Downloading pretrained model from {HF_PRETRAIN_REPO}...")
-        hf_hub_download(
-            repo_id=HF_PRETRAIN_REPO,
-            filename=PRETRAIN_FILE,
-            repo_type="model",
-            local_dir=paths.pretrained,
-            **HF_KWARGS,
-        )
+        _wget(PRETRAIN_URL, pretrain_path)
         print(f"[Setup] Pretrained model ready: {pretrain_path}")
     else:
         print(f"[Setup] Pretrained model already exists")
@@ -247,13 +247,7 @@ def download_models(paths: Paths):
     symlink = paths.models / CHECKPOINT_FILE
     if not symlink.exists():
         print(f"[Setup] Downloading checkpoint from {HF_CHECKPOINT_REPO}...")
-        hf_hub_download(
-            repo_id=HF_CHECKPOINT_REPO,
-            filename=CHECKPOINT_FILE,
-            repo_type="model",
-            local_dir=paths.checkpoint_dir,
-            **HF_KWARGS,
-        )
+        _wget(CHECKPOINT_URL, ckpt_path)
         # Create symlink
         if symlink.exists() or symlink.is_symlink():
             symlink.unlink()
@@ -570,14 +564,13 @@ def main():
 
         # Download tar
         print(f"  [Download] {tar_name}...")
+        tar_url = f"https://huggingface.co/datasets/{HF_DATASET_REPO}/resolve/main/{WEBDATASET_PATH}/{tar_name}"
+        tar_path = paths.cache / tar_name
         try:
-            tar_path = hf_hub_download(
-                repo_id=HF_DATASET_REPO,
-                filename=f"{WEBDATASET_PATH}/{tar_name}",
-                repo_type="dataset",
-                cache_dir=paths.cache,
-                **HF_KWARGS,
-            )
+            if not tar_path.exists():
+                _wget(tar_url, tar_path)
+            else:
+                print(f"  [Cache] {tar_path} already exists")
         except Exception as e:
             print(f"  [Error] Failed to download {tar_name}: {e}")
             continue
