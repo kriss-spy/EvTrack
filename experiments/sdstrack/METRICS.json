@@ -1,0 +1,29 @@
+{
+  "tracker": "SDSTrack",
+  "config": "cvpr2024_rgbe",
+  "dataset": "VisEvent test",
+  "total_sequences": 320,
+  "evaluated_sequences": 319,
+  "excluded_sequences": [
+    {
+      "name": "00331_UAV_outdoor5",
+      "reason": "Target absent in first frame (absent_label[0] == 0), no valid initialization"
+    }
+  ],
+  "metrics": {
+    "success_auc": 0.5829,
+    "precision_20px": 0.7506,
+    "sr_0.50": 0.6929
+  },
+  "paper_baseline": {
+    "success_auc": 0.597,
+    "precision_20px": 0.767
+  },
+  "delta": {
+    "success_auc": -0.0141,
+    "precision_20px": -0.0164
+  },
+  "evaluation_protocol": "MATLAB-equivalent (excludes absent frames)",
+  "evaluation_script": "scripts/eval_visevent_matlab.py",
+  "notes": "Metrics computed after fixing absent-frame handling bug in Python evaluation (issue #15). Original uncorrected Python metrics were Success AUC=0.6252, Precision=0.7715."
+}
