@@ -1,6 +1,6 @@
 #!/bin/bash
 # Upload SDSTrack VisEvent results to Hugging Face
-# Run this on RunPod after: pip install huggingface-hub
+# Run this on RunPod after: curl -LsSf https://hf.co/cli/install.sh | bash
 
 set -e
 
@@ -8,16 +8,12 @@ REPO_ID="krisspy39/sdstrack-rgbe"
 RESULTS_DIR="/workspace/sdstrack/RGBE_workspace/results/VisEvent/cvpr2024_rgbe"
 UPLOAD_PATH="results/vis_event_test"
 
-if [ -z "$HF_TOKEN" ]; then
-    echo "ERROR: HF_TOKEN is not set."
-    echo "Get your token at: https://huggingface.co/settings/tokens"
-    echo "Then run: export HF_TOKEN=hf_..."
-    exit 1
-fi
-
-if ! command -v huggingface-cli &> /dev/null; then
-    echo "ERROR: huggingface-cli not found. Install with:"
-    echo "  pip install huggingface-hub"
+# Try to find hf CLI (may need PATH update after install)
+HF_BIN="$(command -v hf 2>/dev/null || echo "/root/.local/bin/hf")"
+if [ ! -x "$HF_BIN" ]; then
+    echo "ERROR: hf CLI not found. Install with:"
+    echo "  curl -LsSf https://hf.co/cli/install.sh | bash"
+    echo "Then reload your shell: source ~/.zshrc"
     exit 1
 fi
 
@@ -29,11 +25,12 @@ fi
 NUM_FILES=$(ls "$RESULTS_DIR"/*.txt 2>/dev/null | wc -l)
 echo "Found $NUM_FILES result files in $RESULTS_DIR"
 
-# Upload all .txt files to the model repo
+# Upload all result files to the model repo
 echo "Uploading to $REPO_ID:$UPLOAD_PATH ..."
-huggingface-cli upload "$REPO_ID" "$RESULTS_DIR" "$UPLOAD_PATH" \
+"$HF_BIN" upload "$REPO_ID" "$RESULTS_DIR" "$UPLOAD_PATH" \
     --repo-type model \
-    --token "$HF_TOKEN"
+    --commit-message "Add SDSTrack VisEvent test results" \
+    --commit-description "Tracker predictions for 320 VisEvent test sequences. See https://github.com/kriss-spy/EvTrack/issues/18"
 
 # Also upload a small README for context
 cat > /tmp/results_readme.md << 'INNEREOF'
@@ -55,9 +52,9 @@ For full reproduction details see:
 https://github.com/kriss-spy/EvTrack/tree/sdstrack/experiments/sdstrack
 INNEREOF
 
-huggingface-cli upload "$REPO_ID" /tmp/results_readme.md "$UPLOAD_PATH/README.md" \
+"$HF_BIN" upload "$REPO_ID" /tmp/results_readme.md "$UPLOAD_PATH/README.md" \
     --repo-type model \
-    --token "$HF_TOKEN"
+    --commit-message "Add README for VisEvent results"
 
 echo ""
 echo "Done! Results uploaded to: https://huggingface.co/$REPO_ID/tree/main/$UPLOAD_PATH"
