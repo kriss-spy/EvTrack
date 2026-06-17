@@ -56,11 +56,11 @@ def calc_seq_err_robust(results, rect_anno, absent_anno, norm_dst=False):
     rect_anno: Nx4 ground truth boxes
     absent_anno: Nx1 absent labels (1=present, 0=absent in our dataset)
     """
-    seq_length = rect_anno.shape[0]
-    
-    # Truncate results if longer than annotation
-    if results.shape[0] != rect_anno.shape[0]:
-        results = results[:rect_anno.shape[0], :]
+    # Truncate to minimum length
+    seq_length = min(results.shape[0], rect_anno.shape[0])
+    results = results[:seq_length, :]
+    rect_anno = rect_anno[:seq_length, :]
+    absent_anno = absent_anno[:seq_length]
     
     # Handle invalid tracking results (NAN, negative, complex)
     # Replace with previous frame's result
@@ -160,6 +160,16 @@ def eval_tracker(seqs, results_dir, gt_base):
             res = res.reshape(1, -1)
         if anno.ndim == 1:
             anno = anno.reshape(1, -1)
+        if absent_anno.ndim == 0:
+            absent_anno = np.array([absent_anno])
+        
+        # Save original length before truncation
+        len_all = min(res.shape[0], anno.shape[0], len(absent_anno))
+        
+        # Ensure all arrays have same length
+        res = res[:len_all, :]
+        anno = anno[:len_all, :]
+        absent_anno = absent_anno[:len_all]
         
         err_coverage, err_center = calc_seq_err_robust(res, anno, absent_anno)
         
@@ -172,8 +182,6 @@ def eval_tracker(seqs, results_dir, gt_base):
         success_num_err = np.zeros(len(threshold_set_error))
         for t_idx, th in enumerate(threshold_set_error):
             success_num_err[t_idx] = np.sum(err_center <= th)
-        
-        len_all = anno.shape[0]  # Total frames INCLUDING absent
         
         ave_success_rate_plot[i, :] = success_num_overlap / len_all
         ave_success_rate_plot_err[i, :] = success_num_err / len_all
