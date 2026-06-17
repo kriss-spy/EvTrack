@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Compute SDSTrack metrics (Success AUC, Precision @ 20px) from result files.
+Skips absent frames (absent_label == 0) to match official VisEvent benchmark protocol.
 
 Usage:
     python compute_metrics.py \
@@ -39,22 +40,30 @@ def compute_metrics(results_dir, gt_base):
     print(f"Processing {len(files)} result files...")
     all_ious, all_dists = [], []
     seq_metrics = []
+    total_frames = 0
+    skipped_frames = 0
     for res_file in files:
         seq = os.path.basename(res_file).replace(".txt", "")
         gt_file = os.path.join(gt_base, seq, "groundtruth.txt")
+        absent_file = os.path.join(gt_base, seq, "absent_label.txt")
         if not os.path.exists(gt_file):
             print(f"  Skipping {seq} (no groundtruth)"); continue
         try:
             pred = np.loadtxt(res_file, delimiter=",")
             gt = np.loadtxt(gt_file, delimiter=",")
+            absent = np.loadtxt(absent_file) if os.path.exists(absent_file) else np.ones(len(gt))
         except Exception:
             print(f"  Skipping {seq} (load error)"); continue
         if pred.ndim == 1: pred = pred.reshape(1, -1)
         if gt.ndim == 1: gt = gt.reshape(1, -1)
-        n = min(len(pred), len(gt))
-        pred, gt = pred[:n], gt[:n]
+        n = min(len(pred), len(gt), len(absent))
+        pred, gt, absent = pred[:n], gt[:n], absent[:n]
+        total_frames += n
         seq_ious, seq_dists = [], []
-        for p, g in zip(pred, gt):
+        for p, g, a in zip(pred, gt, absent):
+            if a == 0:  # skip absent frames (target not present)
+                skipped_frames += 1
+                continue
             iou = compute_iou(p, g)
             seq_ious.append(iou)
             all_ious.append(iou)
@@ -63,13 +72,15 @@ def compute_metrics(results_dir, gt_base):
             dist = np.sqrt((pcx - gcx)**2 + (pcy - gcy)**2)
             seq_dists.append(dist)
             all_dists.append(dist)
-        seq_metrics.append({
-            "seq": seq,
-            "mean_iou": float(np.mean(seq_ious)),
-            "mean_dist": float(np.mean(seq_dists)),
-        })
+        if seq_ious:
+            seq_metrics.append({
+                "seq": seq,
+                "mean_iou": float(np.mean(seq_ious)),
+                "mean_dist": float(np.mean(seq_dists)),
+            })
     if not all_ious:
         print("No valid data to compute metrics."); return None
+    print(f"Total frames: {total_frames}, Skipped (absent): {skipped_frames}, Evaluated: {total_frames - skipped_frames}")
     thresholds = np.arange(0, 1.01, 0.01)
     success_rates = [np.mean(np.array(all_ious) >= t) for t in thresholds]
     auc = np.mean(success_rates)
