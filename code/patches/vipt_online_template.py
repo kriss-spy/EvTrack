@@ -15,6 +15,7 @@ from lib.test.tracker.data_utils import PreprocessorMM
 from lib.utils.box_ops import clip_box
 from lib.utils.ce_utils import generate_mask_cond
 from skimage.metrics import structural_similarity as ssim
+import time
 
 UPDATE_INTERVAL=10
 SCORE_THRESHOLD=0.7
@@ -57,6 +58,10 @@ class ViPTTrack(BaseTracker):
         self.trust_z_list={}
         self.count=0
 
+        # track query: save the history information of the previous frame
+        self.track_query = None
+        self.token_len = 1
+
     def save_img(self,tensor):
         self.count+=1
         mean_6 = torch.tensor([0.485, 0.456, 0.406, 0.485, 0.456, 0.406]).view(1, 6, 1, 1)
@@ -76,6 +81,7 @@ class ViPTTrack(BaseTracker):
 
     def initialize(self, image, info: dict):
         # forward the template once
+        self.track_query=None
 
         z_patch_arr, resize_factor, z_amask_arr  = sample_target(image, info['init_bbox'], self.params.template_factor,
                                                     output_sz=self.params.template_size)
@@ -112,23 +118,30 @@ class ViPTTrack(BaseTracker):
         self.update_count+=1
         x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
                                                                 output_sz=self.params.search_size)  # (x1, y1, w, h)
+        #这是根据上一帧的位置，对当前搜索图像进行中心裁剪
         search = self.preprocessor.process(x_patch_arr)
 
 
+        # t0=time.perf_counter()
         with torch.no_grad():
             if self.start_online:
                 out_dict = self.network.forward(
                     template=self.initial_z_tensor, search=search, ce_template_mask=self.initial_mask_z,
-                    online_template=self.online_z_tensor,online_ce_mask=self.online_mask_z)
+                    online_template=self.online_z_tensor,online_ce_mask=self.online_mask_z,token_len=self.token_len)
             else:
                 out_dict = self.network.forward(
                     template=self.initial_z_tensor, search=search, ce_template_mask=self.initial_mask_z,
-                    online_template=None,online_ce_mask=None)
+                    online_template=None,online_ce_mask=None,token_len=self.token_len)
+        # t1=time.perf_counter()
+        # elapse=t1-t0
+        # print(f'模型推理时间：{elapse}')
 
+        if out_dict.get('track_query', None) is not None:
+            self.track_query = out_dict['track_query']
 
         # add hann windows
         pred_score_map = out_dict['score_map']
-        response = self.output_window * pred_score_map
+        response = self.output_window * pred_score_map#距离先验
         pred_boxes, best_score = self.network.box_head.cal_bbox(response, out_dict['size_map'], out_dict['offset_map'], return_score=True)
         max_score = best_score[0][0].item()
         pred_boxes = pred_boxes.view(-1, 4)
@@ -141,6 +154,7 @@ class ViPTTrack(BaseTracker):
             self.start_online=True
 
         # ---------- 模板动态更新----------
+        # t0=time.perf_counter()
         if self.update_count > UPDATE_INTERVAL and max_score > SCORE_THRESHOLD:
 
             # 从当前帧裁剪目标区域+生成先验mask
@@ -172,7 +186,9 @@ class ViPTTrack(BaseTracker):
                     new_bbox = self.transform_bbox_to_crop(self.state, target_resize_factor,
                                                            target_tensor.device).squeeze(1)
                     self.online_mask_z = generate_mask_cond(self.cfg, 1, target_tensor.device, new_bbox)
-
+        # t1=time.perf_counter()
+        # elapse=t1-t0
+        # print(f'模板更新时间：{elapse}')
 
         # for debug，结果可视化
         if self.debug == 1:

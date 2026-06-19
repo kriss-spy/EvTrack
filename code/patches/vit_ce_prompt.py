@@ -180,10 +180,12 @@ class VisionTransformerCE(VisionTransformer):
         self.norm = norm_layer(embed_dim)
 
         self.init_weights(weight_init)
+        self.add_cls_token=False
+        self.token_type='add'
 
     def forward_features(self, z, x,online_z=None, mask_z=None, mask_x=None,
                          ce_template_mask=None,online_ce_mask=None, ce_keep_rate=None,online_score=None,
-                         return_last_attn=False):
+                         return_last_attn=False,track_query=None,token_len=None):
 
         B, H, W = x.shape[0], x.shape[2], x.shape[3]
         # rgb_img
@@ -234,8 +236,16 @@ class VisionTransformerCE(VisionTransformer):
             mask_x = mask_x.squeeze(-1)
 
         if self.add_cls_token:
-            cls_tokens = self.cls_token.expand(B, -1, -1)
-            cls_tokens = cls_tokens + self.cls_pos_embed
+            if self.token_type == "concat":
+                if track_query is None:
+                    query = self.cls_token.expand(B, token_len, -1)
+                else:
+                    track_len = track_query.size(1)
+                    new_query = self.cls_token.expand(B, token_len - track_len, -1)
+                    query = torch.cat([new_query, track_query], dim=1)
+            elif self.token_type == "add":
+                new_query = self.cls_token.expand(B, token_len, -1)  # copy B times
+                query = new_query if track_query is None else track_query + new_query
 
         z += self.pos_embed_z
         x += self.pos_embed_x
@@ -292,7 +302,8 @@ class VisionTransformerCE(VisionTransformer):
 
         x = combine_tokens(z, x, mode=self.cat_mode)
         if self.add_cls_token:
-            x = torch.cat([cls_tokens, x], dim=1)
+            x = torch.cat([query, x], dim=1)     # (B, 1+z+x, 768)
+            query_len = query.size(1)
 
         x = self.pos_drop(x)
 
@@ -318,20 +329,25 @@ class VisionTransformerCE(VisionTransformer):
             '''
             if i >= 1:
                 if self.prompt_type in ['vipt_deep']:
+                    if self.add_cls_token:
+                        query=x[:,:query_len]
+                        x=x[:,query_len:]
                     x_ori = x
+
                     # recover x to go through prompt blocks
                     lens_z_new = global_index_t.shape[1]
                     lens_x_new = global_index_s.shape[1]
                     z = x[:, :lens_z_new]
                     x = x[:, lens_z_new:]
+
                     if removed_indexes_s and removed_indexes_s[0] is not None:
                         removed_indexes_cat = torch.cat(removed_indexes_s, dim=1)
                         pruned_lens_x = lens_x - lens_x_new
-                        pad_x = torch.zeros([B, pruned_lens_x, x.shape[2]], device=x.device)
+                        pad_x = torch.zeros([B, pruned_lens_x, x.shape[2]], device=x.device,dtype=x.dtype)
                         x = torch.cat([x, pad_x], dim=1)
                         index_all = torch.cat([global_index_s, removed_indexes_cat], dim=1)
                         C = x.shape[-1]
-                        x = torch.zeros_like(x).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64), src=x)
+                        x = torch.zeros_like(x,dtype=x.dtype).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64), src=x)
                     x = recover_tokens(x, lens_z_new, lens_x, mode=self.cat_mode)
                     x = torch.cat([z, x], dim=1)
 
@@ -390,13 +406,23 @@ class VisionTransformerCE(VisionTransformer):
                     # re-conduct CE
                     x = x_ori + candidate_elimination_prompt(x, global_index_t.shape[1], global_index_s)
 
-            x, global_index_t, global_index_s, removed_index_s, attn = \
-                blk(x, global_index_t, global_index_s, mask_x, ce_template_mask, ce_keep_rate)
+                    if self.add_cls_token:
+                        x = torch.cat([query, x], dim=1)
+
+            if self.add_cls_token:
+                x, global_index_t, global_index_s, removed_index_s, attn = \
+                    blk(x, global_index_t, global_index_s, mask_x, ce_template_mask, ce_keep_rate,add_cls_token=self.add_cls_token,query_len=query_len)
+            else:
+                x, global_index_t, global_index_s, removed_index_s, attn = \
+                    blk(x, global_index_t, global_index_s, mask_x, ce_template_mask, ce_keep_rate,add_cls_token=self.add_cls_token)
 
             if self.ce_loc is not None and i in self.ce_loc:
                 removed_indexes_s.append(removed_index_s)
 
         x = self.norm(x)
+        if self.add_cls_token:
+            query=x[:,:query_len]
+            x=x[:,query_len:]
         lens_x_new = global_index_s.shape[1]
         lens_z_new = global_index_t.shape[1]
 
@@ -407,17 +433,19 @@ class VisionTransformerCE(VisionTransformer):
             removed_indexes_cat = torch.cat(removed_indexes_s, dim=1)
 
             pruned_lens_x = lens_x - lens_x_new
-            pad_x = torch.zeros([B, pruned_lens_x, x.shape[2]], device=x.device)
+            pad_x = torch.zeros([B, pruned_lens_x, x.shape[2]], device=x.device,dtype=x.dtype)
             x = torch.cat([x, pad_x], dim=1)
             index_all = torch.cat([global_index_s, removed_indexes_cat], dim=1)
             # recover original token order
             C = x.shape[-1]
-            x = torch.zeros_like(x).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64), src=x)
+            x = torch.zeros_like(x,dtype=x.dtype).scatter_(dim=1, index=index_all.unsqueeze(-1).expand(B, -1, C).to(torch.int64), src=x)
 
         x = recover_tokens(x, lens_z_new, lens_x, mode=self.cat_mode)
 
         # re-concatenate with the template, which may be further used by other modules
         #注意这里为了保持后向支持，对head部分的代码不进行修改，对online模板的数据和原始模板的数据分离相加，归一化，然后再输入head，这样就和原来head的输入一样了
+
+
         if online_z is not None:
             oz=z[:,:lens_z_new//2]
             z=z[:,lens_z_new//2:]
@@ -429,14 +457,16 @@ class VisionTransformerCE(VisionTransformer):
             "attn": attn, # used for visualization
             "removed_indexes_s": removed_indexes_s,  # used for visualization
         }
+        if self.add_cls_token:
+            aux_dict.update({'query':query})
 
         return x, aux_dict
 
     def forward(self, z, x, online_z=None,ce_template_mask=None, online_ce_mask=None,ce_keep_rate=None,online_score=None,
                 tnc_keep_rate=None,
-                return_last_attn=False):
+                return_last_attn=False,track_query=None,token_len=None):
 
-        x, aux_dict = self.forward_features(z, x, online_score=online_score,online_z=online_z,online_ce_mask=online_ce_mask,ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,)
+        x, aux_dict = self.forward_features(z, x, track_query=track_query,token_len=token_len,online_score=online_score,online_z=online_z,online_ce_mask=online_ce_mask,ce_template_mask=ce_template_mask, ce_keep_rate=ce_keep_rate,)
 
 
         return x, aux_dict
