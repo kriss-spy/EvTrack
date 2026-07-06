@@ -21,10 +21,11 @@ This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Track
 
 ```
 .
-├── code/               # Tracker implementation
-│   ├── vipt/           #   ViPT upstream (submodule)
-│   └── patches/        #   Team modifications
-├── evaluation/         # Shared evaluation metrics and scripts
+├── code/               # Tracker implementations
+│   ├── SDSTrack/       #   SDSTrack reproduction (upstream submodule + eval scripts)
+│   └── ViPT/           #   Pointer to kriss-spy/ViPT fork (vipt-improvement branch)
+├── experiments/        # Experiment configs, metrics, reproduction logs
+├── scripts/            # Shared evaluation metric scripts
 ├── data/               # Dataset paths and setup guides (not raw data)
 ├── results/            # Evaluation outputs, plots, videos
 ├── docs/               # Documentation and guides
@@ -36,20 +37,23 @@ This project reproduces and evaluates the [ViPT (Visual Prompt Multi-Modal Track
 ## Quick Start
 
 ```bash
-# Clone with submodule
+# Clone with submodules
 git clone --recurse-submodules https://github.com/kriss-spy/EvTrack
 
 # Or if already cloned:
-# git submodule update --init
+git submodule update --init
+
+# ViPT: clone the fork separately
+git clone -b vipt-improvement https://github.com/kriss-spy/ViPT
 
 # Install base dependencies
 pip install -r requirements.txt
 
-# Install tracker-specific dependencies
-pip install -r code/requirements.txt
+# Run SDSTrack evaluation
+python code/SDSTrack/sdstrack_eval.py --workspace /workspace/sdstrack
 
-# Run evaluation
-python evaluation/run_eval.py --tracker_dir <path> --dataset <name>
+# Compute metrics
+python scripts/compute_metrics.py --results <path> --dataset <path>
 ```
 
 ## Improvement

@@ -224,6 +224,10 @@ data/*
 results/*
 !results/.gitkeep
 
+# Vendored upstream tracker repositories
+**/upstream/
+!code/SDSTrack/upstream/
+
 # OpenCode / agent artifacts (kept local)
 .agents/
 docs/agents/

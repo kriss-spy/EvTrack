@@ -1,0 +1,41 @@
+# SDSTrack VisEvent Reproduction — Python Dependencies
+# Generated from RunPod environment (PyTorch 2.4.1 + CUDA 12.4)
+# Additional tracking-specific packages listed below
+
+# Core
+torch==2.4.1
+torchvision==0.19.1
+torchaudio==2.4.1
+numpy==1.26.3
+pillow==10.2.0
+
+# SDSTrack upstream dependencies (from install_sdstrack.sh)
+timm==0.5.4
+easydict
+cython
+opencv-python
+pandas
+pycocotools
+jpeg4py
+scipy
+tb-nightly
+lmdb
+visdom
+wandb
+vot-toolkit==0.5.3
+vot-trax==3.0.3
+tqdm
+huggingface-hub
+
+# Utilities
+PyYAML==6.0.2
+requests
+matplotlib
+
+# Jupyter (for notebook workflow)
+ipykernel
+jupyter
+
+# Note: Install with CUDA 12.4 wheels:
+#   pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu124
+# Or use the base RunPod PyTorch container which already includes these.
