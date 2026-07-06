@@ -104,7 +104,6 @@ See [docs/dataset-setup.md](docs/dataset-setup.md) for download details.
 ├── results/            # Evaluation outputs, plots, videos
 ├── docs/               # Documentation and guides
 ├── gif/                # Tracking demo GIFs
-├── AGENTS.md           # Agent workflow instructions
 ├── requirements.txt
 └── README.md
 ```
