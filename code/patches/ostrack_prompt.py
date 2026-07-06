@@ -36,6 +36,9 @@ class ViPTrack(nn.Module):
         if self.aux_loss:
             self.box_head = _get_clones(self.box_head, 6)
 
+
+
+
     '''this place may be need to change'''
     def forward(self, template: torch.Tensor,
                 search: torch.Tensor,
@@ -44,7 +47,9 @@ class ViPTrack(nn.Module):
                 ce_template_mask=None,
                 ce_keep_rate=None,
                 return_last_attn=False,
-                online_score=None
+                online_score=None,
+                track_query=None,
+                token_len=None,
                 ):
 
         #更改：前向支持额外输入online模板
@@ -53,7 +58,9 @@ class ViPTrack(nn.Module):
                                     online_ce_mask=online_ce_mask,
                                     online_score=online_score,
                                     ce_keep_rate=ce_keep_rate,
-                                    return_last_attn=return_last_attn
+                                    return_last_attn=return_last_attn,
+                                    track_query = track_query,
+                                    token_len = token_len,
                                     )
 
         # Forward head
