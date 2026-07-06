@@ -66,6 +66,8 @@ MATLAB-equivalent protocol excluding absent frames):
 - Per-sequence prediction archive:
   [`krisspy39/visevent-sdstrack-results`](https://huggingface.co/datasets/krisspy39/visevent-sdstrack-results)
   on Hugging Face.
+- Full VisEvent reproduction report:
+  [`docs/事件相机目标跟踪.pdf`](docs/事件相机目标跟踪.pdf)
 
 ## Documentation
 

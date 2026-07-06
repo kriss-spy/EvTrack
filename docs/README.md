@@ -12,6 +12,7 @@ linked from the index below.
 | Document | Description |
 |----------|-------------|
 | [report.md](report.md) | Final project report (forthcoming, Issue #27) |
+| [事件相机目标跟踪.pdf](事件相机目标跟踪.pdf) | VisEvent reproduction report (PDF) |
 | [project-proposal.md](project-proposal.md) | 开题报告 — project proposal, background, objectives, schedule (Chinese) |
 | [course-project-guide.md](course-project-guide.md) | Course design workflow, grading rubric, and submission requirements (Chinese) |
 | [《模式识别》课程设计指导书（2026）修订版1.pdf](《模式识别》课程设计指导书（2026）修订版1.pdf) | Official course design handbook (PDF) |
