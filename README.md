@@ -1,5 +1,7 @@
 # EvTrack: Event Camera-based Object Tracking
 
+> English | [简体中文](README.zh-CN.md)
+
 ## Overview
 
 EvTrack is a research project focused on **single-object tracking with event
