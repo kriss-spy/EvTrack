@@ -223,3 +223,10 @@ data/*
 !data/README.md
 results/*
 !results/.gitkeep
+
+# OpenCode / agent artifacts (kept local)
+.agents/
+docs/agents/
+opencode.json
+skills-lock.json
+CONTEXT.md
