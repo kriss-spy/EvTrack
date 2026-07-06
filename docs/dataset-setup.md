@@ -1,12 +1,13 @@
-# 数据集准备
-
 ## VisEvent
 
 [VisEvent: Reliable object tracking via collaboration of frame and event flows](https://github.com/wangxiao5791509/VisEvent_SOT_Benchmark)
 
 IEEE Transactions on Cybernetics, 2023
 
-can be downloaded to google drive and mounted in google colab
+[VisEvent_SOT_Benchmark](https://github.com/wangxiao5791509/VisEvent_SOT_Benchmark)
+
+[huggingface mirror](https://huggingface.co/datasets/krisspy39/visevent)
+
 
 ## COESOT
 
@@ -14,4 +15,4 @@ can be downloaded to google drive and mounted in google colab
 
 Pattern Recognition, 2025
 
-can be mounted in autodl through baidu netdisk integration
+[COESOT](https://github.com/Event-AHU/COESOT)

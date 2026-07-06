@@ -15,26 +15,24 @@ This project reproduces and evaluates two RGB-Event multi-modal trackers on the
 - **[SDSTrack](https://github.com/hoqolo/SDSTrack)** (CVPR 2024) —
   self-distillation symmetric adapter tracking.
 
-## Results
+## ViPT
 
-Reproduction on the VisEvent test set (319/320 sequences; MATLAB-equivalent
-protocol excluding absent frames):
+Reproduction and an online-template improvement of ViPT. The reproduction and
+improvement code lives in a separate fork:
 
-| Tracker | Success AUC | Precision @ 20px | vs. paper |
-|---------|------------:|-----------------:|-----------|
-| **SDSTrack** (reproduction) | **0.5829** | **0.7506** | within 2% |
-| SDSTrack (paper) | 0.597 | 0.767 | — |
+> **https://github.com/kriss-spy/ViPT** — branch
+> [`vipt-improvement`](https://github.com/kriss-spy/ViPT/tree/vipt-improvement)
 
-Full metrics and the reproduction log: [`experiments/sdstrack/`](experiments/sdstrack/).
+See [`code/ViPT/README.md`](code/ViPT/README.md) for the key changes vs.
+upstream and usage instructions.
 
-### ViPT improvement
+### Online-template improvement
 
 We added a pair of online templates (RGB + event) with an SSIM-gated update
 rule to the original ViPT tracker — **no extra training**, just the original
 checkpoint. This is a remedial measure that improves tracking on some VisEvent
 sequences but cannot fix fundamentally bad cases, and can hurt performance in
-others. The fork lives at
-[`kriss-spy/ViPT` (branch `vipt-improvement`)](https://github.com/kriss-spy/ViPT/tree/vipt-improvement).
+others.
 
 Demo GIFs (original vs. improved):
 
@@ -47,16 +45,38 @@ Failure case — the online template can also hurt performance:
 
 ![failure case](./gif/fail1.gif)
 
+### Further research
+
+- [ViPT quantization research plan](docs/vipt-quantization-research.md) —
+  FP16/INT8 PTQ/QAT roadmap (Issue #9).
+
+## SDSTrack
+
+Reproduction of SDSTrack on the VisEvent test set (319/320 sequences;
+MATLAB-equivalent protocol excluding absent frames):
+
+| Tracker | Success AUC | Precision @ 20px | vs. paper |
+|---------|------------:|-----------------:|-----------|
+| **SDSTrack** (reproduction) | **0.5829** | **0.7506** | within 2% |
+| SDSTrack (paper) | 0.597 | 0.767 | — |
+
+- Code & quick start: [`code/SDSTrack/`](code/SDSTrack/)
+- Results, metrics, and reproduction log:
+  [`experiments/sdstrack/`](experiments/sdstrack/)
+- Per-sequence prediction archive:
+  [`krisspy39/visevent-sdstrack-results`](https://huggingface.co/datasets/krisspy39/visevent-sdstrack-results)
+  on Hugging Face.
+
 ## Documentation
 
 A full, categorized index of all project documentation is in
 [`docs/README.md`](docs/README.md). Highlights:
 
+- [Project report](docs/report.md) — forthcoming (Issue #27)
 - [Project proposal (开题报告)](docs/project-proposal.md)
 - [Dataset setup guide](docs/dataset-setup.md)
 - [Course project guide & grading rubric](docs/course-project-guide.md)
 - [Event-camera survey reading notes](docs/Event-Based%20Vision.md)
-- [ViPT quantization research plan](docs/vipt-quantization-research.md)
 - [SDSTrack reproduction experiment](experiments/sdstrack/README.md)
 
 ## Datasets
@@ -89,6 +109,8 @@ See [docs/dataset-setup.md](docs/dataset-setup.md) for download details.
 
 ## Quick Start
 
+### Common setup
+
 ```bash
 # Clone with submodules
 git clone --recurse-submodules https://github.com/kriss-spy/EvTrack
@@ -96,18 +118,34 @@ git clone --recurse-submodules https://github.com/kriss-spy/EvTrack
 # Or if already cloned:
 git submodule update --init
 
-# ViPT: clone the fork separately
-git clone -b vipt-improvement https://github.com/kriss-spy/ViPT
-
 # Install base dependencies
 pip install -r requirements.txt
+```
 
-# Run SDSTrack evaluation
+### ViPT
+
+```bash
+# Clone the fork separately
+git clone -b vipt-improvement https://github.com/kriss-spy/ViPT
+
+# Evaluate on VisEvent
+cd ViPT
+bash eval_rgbe.sh --seq_home /path/to/VisEvent/test --save_dir ./RGBE_workspace/results
+```
+
+See [`code/ViPT/README.md`](code/ViPT/README.md) for details.
+
+### SDSTrack
+
+```bash
+# Run evaluation
 python code/SDSTrack/sdstrack_eval.py --workspace /workspace/sdstrack
 
 # Compute metrics (MATLAB-equivalent protocol)
 python scripts/eval_visevent_matlab.py --results <path> --dataset <path>
 ```
+
+See [`code/SDSTrack/README.md`](code/SDSTrack/README.md) for details.
 
 ## References
 
